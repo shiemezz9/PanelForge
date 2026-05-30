@@ -1395,7 +1395,7 @@ export default function App() {
                             transform={`translate(${p.image.x}, ${p.image.y}) rotate(${p.image.rotate}, ${p.image.width / 2}, ${p.image.height / 2}) scale(${p.image.scale})`}
                             width={p.image.width}
                             height={p.image.height}
-                            preserveAspectRatio="xMidYMid slice"
+                            preserveAspectRatio="xMidYMid meet"
                           />
                         </g>
                       );
