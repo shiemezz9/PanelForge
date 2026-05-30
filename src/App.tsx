@@ -21,7 +21,8 @@ import {
   Sparkles,
   Unlock,
   Lock,
-  Upload
+  Upload,
+  ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -939,17 +940,17 @@ export default function App() {
               <span>漫画格子生成器</span>
               <span className="text-[10px] font-mono font-normal tracking-wider text-stone-400 border border-stone-200 rounded px-1.5 py-[2px] bg-stone-50 uppercase">No.01</span>
               <span className="text-[11px] font-sans font-medium text-stone-500 border-l border-stone-200 pl-2 ml-0.5">
-                制作者：shiemezz9
-              </span>
-              <a
-                href="https://shiemezz9.github.io/text-layout-generator/"
-                target="_blank"
-                rel="noreferrer"
-                className="text-[11px] font-sans font-semibold text-stone-700 hover:text-stone-950 border border-stone-200 hover:border-stone-400 bg-white px-2 py-[2px] rounded inline-flex items-center gap-1 transition-colors"
-              >
-                <span>文字排版生成器</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
+  制作者：shiemezz9
+</span>
+<a
+  href="https://shiemezz9.github.io/text-layout-generator/"
+  target="_blank"
+  rel="noreferrer"
+  className="text-[11px] font-sans font-semibold text-stone-700 hover:text-stone-950 border border-stone-200 hover:border-stone-400 bg-white px-2 py-[2px] rounded inline-flex items-center gap-1 transition-colors"
+>
+  <span>文字排版生成器</span>
+  <ExternalLink className="w-3 h-3" />
+</a>
             </h1>
             <p className="text-[11px] font-sans text-stone-500 mt-0.5 animate-pulse">支持斜角裁切、图层解锁、无边际自由拖拽贴纸、及特技线条密度自由度调节</p>
           </div>
