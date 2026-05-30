@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Remix: Comic Panel Generator",
+  "description": "An interactive, dynamic layout generator for manga and comic panels, supporting slanted borders, bubble speech, retro screentone patterns, and high-fidelity PNG/SVG export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
