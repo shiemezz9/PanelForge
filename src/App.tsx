@@ -147,7 +147,7 @@ export default function App() {
       let bubbles: SpeechBubble[] = [];
       let onomas: Onomatopoeia[] = [];
 
-      if (idx === 0 && currentCount >= 3) {
+      if (idx === -1 && currentCount >= 3) {
         bubbles = [{
           text: '这是哪里？',
           x: Math.round(c.x),
@@ -155,7 +155,7 @@ export default function App() {
           type: 'thought',
           scale: 1.0
         }];
-      } else if (idx === 1 && currentCount >= 3) {
+      } else if (idx === -1 && currentCount >= 3) {
         onomas = [{
           text: '啪嗒！',
           x: Math.round(c.x + 40),
