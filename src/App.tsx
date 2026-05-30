@@ -427,17 +427,18 @@ export default function App() {
     reader.onload = (event) => {
       const src = event.target?.result as string;
       const c = getCentroid(selectedPanel.insetVertices);
+      const bbox = getBoundingBox(selectedPanel.insetVertices);
       
       const updated = panels.map(p => {
         if (p.id === selectedPanel.id) {
           return {
             ...p,
-            image: {
-              src,
-              x: Math.round(c.x - 175), // default centered
-              y: Math.round(c.y - 125),
-              width: 350,
-              height: 250,
+          image: {
+                  src,
+                  x: Math.round(bbox.x),
+                  y: Math.round(bbox.y),
+                  width: Math.round(bbox.w),
+                  height: Math.round(bbox.h),
               scale: 1.0,
               rotate: 0,
               isUnlocked: false // Locked in panel by default
@@ -1411,7 +1412,7 @@ export default function App() {
                               transform={`translate(${p.image.x}, ${p.image.y}) rotate(${p.image.rotate}, ${p.image.width / 2}, ${p.image.height / 2}) scale(${p.image.scale})`}
                               width={p.image.width}
                               height={p.image.height}
-                              preserveAspectRatio="xMidYMid slice"
+                              preserveAspectRatio="xMidYMid meet"
                             />
                           </g>
                         </g>
