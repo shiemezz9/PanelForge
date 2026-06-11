@@ -111,10 +111,10 @@ export default function App() {
   // Divider dragging state
   const [activeDividerDrag, setActiveDividerDrag] = useState<{
     dividerId: string;
-    type: 'horizontal' | 'vertical';
+    type: 'horizontal' | 'vertical' | 'corner';
     dragStartPageX: number;
     dragStartPageY: number;
-    matchedVertices: { panelId: string; vertexIdx: number; pointRef: 'p1' | 'p2' }[];
+    matchedVertices: { panelId: string; vertexIdx: number; pointRef?: 'p1' | 'p2' | 'corner' }[];
     initialVerticesMap: { [panelId: string]: Point[] };
   } | null>(null);
 
@@ -433,12 +433,12 @@ export default function App() {
         if (p.id === selectedPanel.id) {
           return {
             ...p,
-          image: {
-                  src,
-                  x: Math.round(bbox.x),
-                  y: Math.round(bbox.y),
-                  width: Math.round(bbox.w),
-                  height: Math.round(bbox.h),
+            image: {
+              src,
+              x: Math.round(bbox.x),
+              y: Math.round(bbox.y),
+              width: Math.round(bbox.w),
+              height: Math.round(bbox.h),
               scale: 1.0,
               rotate: 0,
               isUnlocked: false // Locked in panel by default
@@ -679,7 +679,11 @@ export default function App() {
             );
 
             if (match) {
-              if (activeDividerDrag.type === 'horizontal') {
+              if (activeDividerDrag.type === 'corner') {
+                const newX = Math.max(10, Math.min(dims.w - 10, v.x + deltaSvgX));
+                const newY = Math.max(10, Math.min(dims.h - 10, v.y + deltaSvgY));
+                return { x: newX, y: newY };
+              } else if (activeDividerDrag.type === 'horizontal') {
                 const newY = Math.max(10, Math.min(dims.h - 10, v.y + deltaSvgY));
                 return { ...v, y: newY };
               } else {
@@ -826,19 +830,84 @@ export default function App() {
     return dividers;
   };
 
+  const getCornerHandles = () => {
+    const handles: {
+      id: string;
+      point: Point;
+      matchedVertices: { panelId: string; vertexIdx: number; pointRef: 'corner' }[];
+    }[] = [];
+    const cornerThreshold = 10;
+
+    panels.forEach(p => {
+      p.originalVertices.forEach((v, vIdx) => {
+        const matchedVertices: { panelId: string; vertexIdx: number; pointRef: 'corner' }[] = [];
+
+        panels.forEach(otherPanel => {
+          otherPanel.originalVertices.forEach((otherVertex, otherVertexIdx) => {
+            if (Math.hypot(v.x - otherVertex.x, v.y - otherVertex.y) < cornerThreshold) {
+              matchedVertices.push({
+                panelId: otherPanel.id,
+                vertexIdx: otherVertexIdx,
+                pointRef: 'corner'
+              });
+            }
+          });
+        });
+
+        const key = matchedVertices
+          .map(m => `${m.panelId}:${m.vertexIdx}`)
+          .sort()
+          .join('|');
+
+        if (handles.some(h => h.id === key)) return;
+
+        handles.push({
+          id: key || `${p.id}:${vIdx}`,
+          point: { x: v.x, y: v.y },
+          matchedVertices
+        });
+      });
+    });
+
+    return handles;
+  };
+
+  const beginDividerDrag = (
+    drag: {
+      id: string;
+      type: 'horizontal' | 'vertical' | 'corner';
+      matchedVertices: { panelId: string; vertexIdx: number; pointRef?: 'p1' | 'p2' | 'corner' }[];
+    },
+    clientX: number,
+    clientY: number
+  ) => {
+    const initialMap: { [panelId: string]: Point[] } = {};
+    panels.forEach(p => {
+      initialMap[p.id] = p.originalVertices.map(v => ({ ...v }));
+    });
+    setActiveDividerDrag({
+      dividerId: drag.id,
+      type: drag.type,
+      dragStartPageX: clientX,
+      dragStartPageY: clientY,
+      matchedVertices: drag.matchedVertices,
+      initialVerticesMap: initialMap
+    });
+  };
+
   // Helper to place gallery item into any grid slot
   const applyGalleryImageToPanel = (src: string, panelId: string) => {
     setPanels(prev => prev.map(p => {
       if (p.id === panelId) {
-        const c = getCentroid(p.insetVertices);
+        const bbox = getBoundingBox(p.insetVertices);
         return {
           ...p,
           image: {
             src,
-            x: Math.round(c.x - 175),
-            y: Math.round(c.y - 125),
-            width: 350,
-            height: 250,
+            x: Math.round(bbox.x),
+            y: Math.round(bbox.y),
+            width: Math.round(bbox.w),
+            height: Math.round(bbox.h),
             scale: 1.0,
             rotate: 0,
             isUnlocked: false
@@ -928,7 +997,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFCF9] text-stone-900 flex flex-col font-sans selection:bg-stone-900 selection:text-stone-50">
+    <div className="h-screen overflow-hidden bg-[#FDFCF9] text-stone-900 flex flex-col font-sans selection:bg-stone-900 selection:text-stone-50">
       {/* Dynamic Header */}
       <header className="border-b border-stone-200/80 bg-white/95 backdrop-blur-md sticky top-0 z-40 px-6 py-4.5 flex flex-wrap items-center justify-between gap-4 shadow-[0_2px_12px_-4px_rgba(28,25,23,0.03)]">
         <div className="flex items-center gap-3">
@@ -941,17 +1010,17 @@ export default function App() {
               <span>漫画格子生成器</span>
               <span className="text-[10px] font-mono font-normal tracking-wider text-stone-400 border border-stone-200 rounded px-1.5 py-[2px] bg-stone-50 uppercase">No.01</span>
               <span className="text-[11px] font-sans font-medium text-stone-500 border-l border-stone-200 pl-2 ml-0.5">
-  制作者：shiemezz9
-</span>
-<a
-  href="https://shiemezz9.github.io/text-layout-generator/"
-  target="_blank"
-  rel="noreferrer"
-  className="text-[11px] font-sans font-semibold text-stone-700 hover:text-stone-950 border border-stone-200 hover:border-stone-400 bg-white px-2 py-[2px] rounded inline-flex items-center gap-1 transition-colors"
->
-  <span>文字排版生成器</span>
-  <ExternalLink className="w-3 h-3" />
-</a>
+                制作者：shiemezz9
+              </span>
+              <a
+                href="https://shiemezz9.github.io/text-layout-generator/"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] font-sans font-semibold text-stone-700 hover:text-stone-950 border border-stone-200 hover:border-stone-400 bg-white px-2 py-[2px] rounded inline-flex items-center gap-1 transition-colors"
+              >
+                <span>文字排版生成器</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
             </h1>
             <p className="text-[11px] font-sans text-stone-500 mt-0.5 animate-pulse">支持斜角裁切、图层解锁、无边际自由拖拽贴纸、及特技线条密度自由度调节</p>
           </div>
@@ -1009,10 +1078,10 @@ export default function App() {
       </header>
 
       {/* Main Workspace Layout */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
         
         {/* Left Side: Layout Preset & Style Configs */}
-        <aside className="w-full lg:w-80 bg-white border-b lg:border-b-0 lg:border-r border-stone-200/85 p-6 overflow-y-auto space-y-6 flex-shrink-0">
+        <aside className="w-full lg:w-80 min-h-0 bg-white border-b lg:border-b-0 lg:border-r border-stone-200/85 p-6 overflow-y-auto space-y-6 flex-shrink-0">
           
           {/* Canvas Proportions / Ratio */}
           <div className="space-y-3">
@@ -1297,7 +1366,7 @@ export default function App() {
         </aside>
 
         {/* Center Canvas Viewer */}
-        <main className="flex-1 bg-[#F5F4EE] overflow-auto p-4 md:p-8 flex items-center justify-center relative min-h-[400px]">
+        <main className="flex-1 min-h-0 bg-[#F5F4EE] overflow-hidden p-4 md:p-8 flex items-center justify-center relative">
           {/* Inner zoom container wrapper */}
           <div
             className="transition-transform duration-200 ease-out"
@@ -1310,7 +1379,7 @@ export default function App() {
                 width: `${dims.w}px`,
                 height: `${dims.h}px`,
                 maxWidth: '92vw',
-                maxHeight: '85vh',
+                maxHeight: 'calc(100vh - 150px)',
                 border: `${config.borderWidth || 8}px solid ${config.borderColor}`
               }}
             >
@@ -1652,38 +1721,64 @@ export default function App() {
                         onMouseDown={(e) => {
                           e.stopPropagation();
                           e.preventDefault();
-                          const initialMap: { [panelId: string]: Point[] } = {};
-                          panels.forEach(p => {
-                            initialMap[p.id] = p.originalVertices.map(v => ({ ...v }));
-                          });
-                          setActiveDividerDrag({
-                            dividerId: div.id,
-                            type: div.type,
-                            dragStartPageX: e.clientX,
-                            dragStartPageY: e.clientY,
-                            matchedVertices: div.matchedVertices,
-                            initialVerticesMap: initialMap
-                          });
+                          beginDividerDrag(div, e.clientX, e.clientY);
                         }}
                         onTouchStart={(e) => {
                           if (e.touches.length === 0) return;
                           e.stopPropagation();
-                          const initialMap: { [panelId: string]: Point[] } = {};
-                          panels.forEach(p => {
-                            initialMap[p.id] = p.originalVertices.map(v => ({ ...v }));
-                          });
-                          setActiveDividerDrag({
-                            dividerId: div.id,
-                            type: div.type,
-                            dragStartPageX: e.touches[0].clientX,
-                            dragStartPageY: e.touches[0].clientY,
-                            matchedVertices: div.matchedVertices,
-                            initialVerticesMap: initialMap
-                          });
+                          beginDividerDrag(div, e.touches[0].clientX, e.touches[0].clientY);
                         }}
                       />
                     );
                   })}
+
+                  {/* Render draggable corner handles for direct panel shape edits */}
+                  {getCornerHandles().map((corner) => (
+                    <g key={`corner-${corner.id}`}>
+                      <circle
+                        cx={corner.point.x}
+                        cy={corner.point.y}
+                        r={10}
+                        fill="transparent"
+                        className="cursor-move"
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          beginDividerDrag(
+                            {
+                              id: corner.id,
+                              type: 'corner',
+                              matchedVertices: corner.matchedVertices
+                            },
+                            e.clientX,
+                            e.clientY
+                          );
+                        }}
+                        onTouchStart={(e) => {
+                          if (e.touches.length === 0) return;
+                          e.stopPropagation();
+                          beginDividerDrag(
+                            {
+                              id: corner.id,
+                              type: 'corner',
+                              matchedVertices: corner.matchedVertices
+                            },
+                            e.touches[0].clientX,
+                            e.touches[0].clientY
+                          );
+                        }}
+                      />
+                      <circle
+                        cx={corner.point.x}
+                        cy={corner.point.y}
+                        r={4.5}
+                        fill="#f59e0b"
+                        stroke="#ffffff"
+                        strokeWidth={2}
+                        className="pointer-events-none"
+                      />
+                    </g>
+                  ))}
 
                   {/* Level 5: DRAGGABLE SOUND EFFECTS, BALLOONS AND CUSTOM GRAPHICS STICKERS */}
                   {panels.map(p => {
@@ -1945,7 +2040,7 @@ export default function App() {
         </main>
 
         {/* Right Side: Active Panel Editor Drawer (Full Customizability) */}
-        <aside className="w-full lg:w-96 bg-white border-t lg:border-t-0 lg:border-l border-stone-200/85 p-6 overflow-y-auto space-y-6 flex-shrink-0 text-stone-800">
+        <aside className="w-full lg:w-96 min-h-0 bg-white border-t lg:border-t-0 lg:border-l border-stone-200/85 p-6 overflow-y-auto space-y-6 flex-shrink-0 text-stone-800">
           
           <div className="space-y-4">
             <h2 className="text-[11px] font-mono font-bold text-stone-400 flex items-center gap-2 pb-2.5 border-b border-stone-150 uppercase tracking-widest leading-none">

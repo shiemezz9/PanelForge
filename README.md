@@ -36,3 +36,22 @@ It is especially useful for:
 4. Select a panel and add images, bubbles, stickers, and effects.
 5. Drag elements on the canvas to refine the composition.
 6. Export the final work as SVG or PNG.
+
+## Run Locally
+
+Prerequisite: Node.js
+
+```bash
+npm install
+npm run dev
+```
+
+Then open the local URL shown in the terminal.
+
+## Build
+
+```bash
+npm run build
+```
+
+For GitHub Pages deployment, the app uses the `/PanelForge/` base path when `GITHUB_PAGES=true` is set during the build.
